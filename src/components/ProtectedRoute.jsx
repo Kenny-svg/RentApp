@@ -1,0 +1,20 @@
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+
+function ProtectedRoute({ children, roles = [] }) {
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (roles.length > 0 && !roles.includes(user.role)) {
+    const homePath = user.role === 'Landlord' ? '/dashboard/landlord' : '/dashboard/tenant';
+    return <Navigate to={homePath} replace />;
+  }
+
+  return children;
+}
+
+export default ProtectedRoute;
