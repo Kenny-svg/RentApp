@@ -5,6 +5,8 @@ import Button from './Button';
 import { formatCurrency } from '../utils/format';
 
 function PropertyCard({ property, landlord }) {
+  const safeLandlord = landlord || { id: property.landlordId, name: 'Landlord', rating: 0 };
+
   return (
     <article className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(15,23,42,0.14)]">
       <div className="relative">
@@ -37,7 +39,10 @@ function PropertyCard({ property, landlord }) {
 
         <div className="flex items-center justify-between">
           <p className="text-xl font-extrabold text-slate-900">{formatCurrency(property.price)}<span className="text-sm font-medium text-slate-500">/mo</span></p>
-          <RatingStars rating={property.propertyRating} />
+          <div className="text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Property Rating</p>
+            <RatingStars rating={property.propertyRating} />
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -46,16 +51,22 @@ function PropertyCard({ property, landlord }) {
               <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <FaShieldHalved className="text-accent-600" /> Verified Landlord
               </p>
-              <Link to={`/landlords/${landlord.id}`} className="mt-0.5 block text-sm font-semibold text-brand-700 hover:underline">
-                {landlord.name}
+              <Link
+                to={`/landlords/${safeLandlord.id}`}
+                className="mt-1 block text-sm font-semibold text-brand-700 hover:underline"
+              >
+                {safeLandlord.name}
               </Link>
             </div>
-            <RatingStars rating={landlord.rating} />
+            <div className="text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Landlord Rating</p>
+              <RatingStars rating={safeLandlord.rating} />
+            </div>
           </div>
         </div>
 
         <Link to={`/properties/${property.id}`}>
-          <Button className="w-full rounded-xl">View Details</Button>
+          <Button className="w-full rounded-xl mt-3">View Details</Button>
         </Link>
       </div>
     </article>

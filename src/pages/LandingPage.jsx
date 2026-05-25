@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaHouse,
@@ -16,11 +17,22 @@ import Button from '../components/Button';
 import PropertyCard from '../components/PropertyCard';
 import LandlordCard from '../components/LandlordCard';
 import BenefitCard from '../components/BenefitCard';
-import { landlords, properties, testimonials } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
+import { getFeaturedProperties } from '../services/propertyService';
+import { getTopLandlords } from '../services/profileService';
+import { getTestimonials } from '../services/reviewService';
+
+const fallbackImage =
+  'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80';
 
 function LandingPage() {
-  const featuredProperties = properties.slice(0, 3);
-  const topLandlords = [...landlords].sort((a, b) => b.rating - a.rating).slice(0, 3);
+  const { isAuthenticated, user } = useAuth();
+  const [featuredProperties, setFeaturedProperties] = useState([]);
+  const [topLandlords, setTopLandlords] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const landlordBenefits = [
     {
       icon: FaChartLine,
@@ -41,26 +53,90 @@ function LandingPage() {
       tone: 'indigo'
     }
   ];
+
   const tenantBenefits = [
     {
       icon: FaMagnifyingGlass,
       title: 'Compare Before You Commit',
-      description: 'Evaluate property condition, response speed, and landlord professionalism upfront.',
+      description: 'Evaluate landlord response, maintenance standards, and real tenant sentiment early.',
       tone: 'indigo'
     },
     {
       icon: FaClipboardCheck,
       title: 'Choose Safer Rentals',
-      description: 'Verified ratings and review patterns help avoid poor housing experiences.',
+      description: 'Verified review history helps you avoid poor management and hidden property issues.',
       tone: 'blue'
     },
     {
       icon: FaMessage,
       title: 'Rent With Clarity',
-      description: 'Understand maintenance quality and communication standards before move-in.',
+      description: 'Know communication quality, fairness, and issue resolution patterns before paying.',
       tone: 'green'
+    },
+    {
+      icon: FaShieldHeart,
+      title: 'Build Housing Confidence',
+      description: 'Move into homes with stronger trust signals and transparent landlord reputation.',
+      tone: 'indigo'
     }
   ];
+
+  useEffect(() => {
+    const loadLandingData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const [featuredRows, landlordRows, testimonialRows] = await Promise.all([
+          getFeaturedProperties(3),
+          getTopLandlords(3),
+          getTestimonials(3)
+        ]);
+
+        setFeaturedProperties(featuredRows || []);
+        setTopLandlords(landlordRows || []);
+        setTestimonials(testimonialRows || []);
+      } catch (loadError) {
+        setError(loadError?.message || 'Unable to load homepage data from backend.');
+        setFeaturedProperties([]);
+        setTopLandlords([]);
+        setTestimonials([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLandingData();
+  }, []);
+
+  const featuredCards = useMemo(
+    () =>
+      featuredProperties.map((item) => ({
+        property: {
+          id: item.id,
+          title: item.title,
+          location: item.location,
+          price: Number(item.rent_price || 0),
+          type: item.property_type || 'Apartment',
+          bedrooms: item.bedrooms ?? 0,
+          bathrooms: item.bathrooms ?? 0,
+          landlordId: item.landlord_id,
+          propertyRating: Number(item.average_rating || 0),
+          availability:
+            item.availability_status?.charAt(0).toUpperCase() + item.availability_status?.slice(1) || 'Available',
+          image:
+            item.property_images?.find((image) => image.is_cover)?.image_url ||
+            item.property_images?.[0]?.image_url ||
+            fallbackImage
+        },
+        landlord: {
+          id: item.landlord_id,
+          name: item.landlord_profile?.full_name || 'Landlord',
+          rating: Number(item.landlord_rating || 0)
+        }
+      })),
+    [featuredProperties]
+  );
 
   return (
     <div>
@@ -77,16 +153,34 @@ function LandingPage() {
               RentRate helps tenants discover quality rentals and gives great landlords the visibility they deserve through honest reviews.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/properties">
-                <Button variant="secondary" size="lg">
-                  Find a Property
-                </Button>
-              </Link>
-              <Link to="/add-property">
-                <Button variant="outline" size="lg" className="border-white/60 bg-white/10 text-white hover:bg-white/20">
-                  List Your Property
-                </Button>
-              </Link>
+              {!isAuthenticated || user?.role === 'tenant' ? (
+                <Link to="/properties">
+                  <Button variant="secondary" size="lg">
+                    Find a Property
+                  </Button>
+                </Link>
+              ) : null}
+
+              {isAuthenticated && user?.role === 'landlord' ? (
+                <>
+                  <Link to="/add-property">
+                    <Button variant="secondary" size="lg">
+                      List Your Property
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard/landlord">
+                    <Button variant="outline" size="lg" className="border-white/60 bg-white/10 text-white hover:bg-white/20">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <Link to="/add-property">
+                  <Button variant="outline" size="lg" className="border-white/60 bg-white/10 text-white hover:bg-white/20">
+                    List Your Property
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
           <div className="card bg-white/95 p-6 text-slate-900">
@@ -109,6 +203,12 @@ function LandingPage() {
         </div>
       </section>
 
+      {error ? (
+        <section className="container-app pt-6">
+          <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-700">{error}</p>
+        </section>
+      ) : null}
+
       <section className="container-app py-16">
         <h2 className="section-title">Why Landlords Choose RentRate</h2>
         <p className="section-subtitle">Purpose-built tools to turn property quality into tenant trust.</p>
@@ -124,7 +224,7 @@ function LandingPage() {
       <section className="container-app pb-16">
         <h2 className="section-title">Why Tenants Trust RentRate</h2>
         <p className="section-subtitle">More than listings. Get social proof before signing any lease.</p>
-        <div className="mt-7 grid gap-5 md:grid-cols-3">
+        <div className="mt-7 grid gap-5 sm:grid-cols-2">
           {tenantBenefits.map((item, index) => (
             <div key={item.title} className="animate-fade-up" style={{ animationDelay: `${index * 120}ms` }}>
               <BenefitCard icon={item.icon} title={item.title} description={item.description} tone={item.tone} />
@@ -140,25 +240,36 @@ function LandingPage() {
             View all
           </Link>
         </div>
+
+        {loading ? <p className="text-sm text-slate-600">Loading featured properties...</p> : null}
+
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {featuredProperties.map((property) => {
-            const landlord = landlords.find((item) => item.id === property.landlordId);
-            return <PropertyCard key={property.id} property={property} landlord={landlord} />;
-          })}
+          {featuredCards.map(({ property, landlord }) => (
+            <PropertyCard key={property.id} property={property} landlord={landlord} />
+          ))}
         </div>
+
+        {!loading && featuredCards.length === 0 ? (
+          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">No featured properties yet.</p>
+        ) : null}
       </section>
 
       <section className="container-app pb-16">
         <h2 className="section-title">Top-Rated Landlords</h2>
+        {loading ? <p className="mt-3 text-sm text-slate-600">Loading top landlords...</p> : null}
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           {topLandlords.map((landlord) => (
             <LandlordCard key={landlord.id} landlord={landlord} />
           ))}
         </div>
+        {!loading && topLandlords.length === 0 ? (
+          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">No landlord rankings yet.</p>
+        ) : null}
       </section>
 
       <section className="container-app pb-10">
         <h2 className="section-title">What Users Say</h2>
+        {loading ? <p className="mt-3 text-sm text-slate-600">Loading testimonials...</p> : null}
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           {testimonials.map((item, index) => (
             <article
@@ -178,6 +289,9 @@ function LandingPage() {
             </article>
           ))}
         </div>
+        {!loading && testimonials.length === 0 ? (
+          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">No testimonials yet.</p>
+        ) : null}
       </section>
     </div>
   );

@@ -5,16 +5,16 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import LandlordDashboard from './pages/LandlordDashboard';
 import AddPropertyPage from './pages/AddPropertyPage';
+import EditPropertyPage from './pages/EditPropertyPage';
 import PropertyListingPage from './pages/PropertyListingPage';
 import PropertyDetailsPage from './pages/PropertyDetailsPage';
 import TenantDashboard from './pages/TenantDashboard';
 import ReviewPage from './pages/ReviewPage';
 import LandlordProfilePage from './pages/LandlordProfilePage';
 import ContactLandlordPage from './pages/ContactLandlordPage';
+import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
-
-const ALL_ROLES = ['Landlord', 'Tenant'];
 
 function App() {
   return (
@@ -26,7 +26,7 @@ function App() {
         <Route
           path="/dashboard/landlord"
           element={
-            <ProtectedRoute roles={['Landlord']}>
+            <ProtectedRoute roles={['landlord']}>
               <LandlordDashboard />
             </ProtectedRoute>
           }
@@ -34,7 +34,7 @@ function App() {
         <Route
           path="/dashboard/tenant"
           element={
-            <ProtectedRoute roles={['Tenant']}>
+            <ProtectedRoute roles={['tenant']}>
               <TenantDashboard />
             </ProtectedRoute>
           }
@@ -42,29 +42,38 @@ function App() {
         <Route
           path="/add-property"
           element={
-            <ProtectedRoute roles={['Landlord']}>
+            <ProtectedRoute roles={['landlord']}>
               <AddPropertyPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/properties"
+          path="/properties/:propertyId/edit"
           element={
-            <ProtectedRoute roles={ALL_ROLES}>
-              <PropertyListingPage />
+            <ProtectedRoute roles={['landlord']}>
+              <EditPropertyPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/properties" element={<PropertyListingPage />} />
+        <Route path="/properties/:propertyId" element={<PropertyDetailsPage />} />
+        <Route path="/landlords/:landlordId" element={<LandlordProfilePage />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute roles={['landlord', 'tenant']}>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/properties/:propertyId"
+          path="/review"
           element={
-            <ProtectedRoute roles={ALL_ROLES}>
-              <PropertyDetailsPage />
+            <ProtectedRoute roles={['tenant']}>
+              <ReviewPage />
             </ProtectedRoute>
           }
         />
-        <Route path="/landlords/:landlordId" element={<LandlordProfilePage />} />
-        <Route path="/review" element={<ReviewPage />} />
         <Route path="/contact/:propertyId" element={<ContactLandlordPage />} />
         <Route path="/home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />

@@ -8,41 +8,66 @@ import { useAuth } from '../hooks/useAuth';
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { signup, isAuthenticated, user } = useAuth();
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Tenant' });
+  const { signup, isAuthenticated, user, loading } = useAuth();
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'tenant',
+    tenantIntent: 'searching',
+    landlordEmail: ''
+  });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  if (isAuthenticated) {
-    const destination = user.role === 'Landlord' ? '/dashboard/landlord' : '/dashboard/tenant';
+  if (!loading && isAuthenticated) {
+    const destination = user.role === 'landlord' ? '/dashboard/landlord' : '/dashboard/tenant';
     return <Navigate to={destination} replace />;
   }
 
   const validate = () => {
     const nextErrors = {};
-    if (!form.name.trim()) nextErrors.name = 'Name is required';
+    if (!form.fullName.trim()) nextErrors.fullName = 'Full name is required';
     if (!form.email.trim()) nextErrors.email = 'Email is required';
     if (!form.password.trim()) nextErrors.password = 'Password is required';
     if (form.password.trim().length > 0 && form.password.trim().length < 6) {
       nextErrors.password = 'Password must be at least 6 characters';
     }
+    if (!form.phone.trim()) nextErrors.phone = 'Phone number is required';
+    if (form.role === 'tenant' && !form.tenantIntent) nextErrors.tenantIntent = 'Please choose one option';
+    if (form.role === 'tenant' && form.tenantIntent === 'have_landlord' && !form.landlordEmail.trim()) {
+      nextErrors.landlordEmail = 'Landlord email is required';
+    }
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
     setFormError('');
+    setSuccessMessage('');
+
     if (Object.keys(nextErrors).length > 0) return;
 
-    const result = signup(form);
-    if (!result.ok) {
-      setFormError(result.error);
-      return;
-    }
+    try {
+      setSubmitting(true);
+      const result = await signup(form);
 
-    navigate(form.role === 'Landlord' ? '/dashboard/landlord' : '/dashboard/tenant', { replace: true });
+      if (result?.needsEmailConfirmation) {
+        setSuccessMessage(result.message);
+        return;
+      }
+
+      navigate(form.role === 'landlord' ? '/dashboard/landlord' : '/dashboard/tenant', { replace: true });
+    } catch (error) {
+      setFormError(error?.message || 'Unable to sign up. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -54,9 +79,9 @@ function SignupPage() {
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
           <InputField
             label="Full Name"
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            error={errors.name}
+            value={form.fullName}
+            onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+            error={errors.fullName}
           />
           <InputField
             label="Email"
@@ -64,6 +89,12 @@ function SignupPage() {
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
             error={errors.email}
+          />
+          <InputField
+            label="Phone"
+            value={form.phone}
+            onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+            error={errors.phone}
           />
           <InputField
             label="Password"
@@ -75,15 +106,52 @@ function SignupPage() {
           <SelectField
             label="Account Type"
             value={form.role}
-            onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                role: e.target.value,
+                tenantIntent: e.target.value === 'tenant' ? prev.tenantIntent : 'searching',
+                landlordEmail: e.target.value === 'tenant' ? prev.landlordEmail : ''
+              }))
+            }
             options={[
-              { label: 'Tenant', value: 'Tenant' },
-              { label: 'Landlord', value: 'Landlord' }
+              { label: 'Tenant', value: 'tenant' },
+              { label: 'Landlord', value: 'landlord' }
             ]}
           />
+
+          {form.role === 'tenant' ? (
+            <>
+              <SelectField
+                label="Are you joining with a landlord?"
+                value={form.tenantIntent}
+                onChange={(e) => setForm((prev) => ({ ...prev, tenantIntent: e.target.value }))}
+                options={[
+                  { label: 'I am just looking for properties', value: 'searching' },
+                  { label: 'Yes, I already have a landlord', value: 'have_landlord' }
+                ]}
+                error={errors.tenantIntent}
+              />
+
+              {form.tenantIntent === 'have_landlord' ? (
+                <InputField
+                  label="Landlord email"
+                  type="email"
+                  value={form.landlordEmail}
+                  onChange={(e) => setForm((prev) => ({ ...prev, landlordEmail: e.target.value }))}
+                  error={errors.landlordEmail}
+                />
+              ) : null}
+            </>
+          ) : null}
+
           {formError ? <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{formError}</p> : null}
-          <Button type="submit" className="w-full">
-            Sign Up
+          {successMessage ? (
+            <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{successMessage}</p>
+          ) : null}
+
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
 

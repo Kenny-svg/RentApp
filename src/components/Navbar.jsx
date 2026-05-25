@@ -1,19 +1,34 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import Button from './Button';
 import { useAuth } from '../hooks/useAuth';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
-  const dashboardPath = user?.role === 'Landlord' ? '/dashboard/landlord' : '/dashboard/tenant';
-  const navLinks = [{ label: 'Properties', to: '/properties' }];
+  const dashboardPath = user?.role === 'landlord' ? '/dashboard/landlord' : '/dashboard/tenant';
+  const navLinks = [];
+
+  if (!isAuthenticated || user?.role === 'tenant') {
+    navLinks.push({ label: 'Properties', to: '/properties' });
+  }
 
   if (isAuthenticated) {
+    navLinks.push({ label: 'Profile', to: '/profile' });
     navLinks.push({ label: 'Dashboard', to: dashboardPath });
-    if (user.role === 'Landlord') navLinks.push({ label: 'Add Property', to: '/add-property' });
+    if (user.role === 'landlord') navLinks.push({ label: 'Add Property', to: '/add-property' });
   }
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setIsOpen(false);
+      navigate('/login', { replace: true });
+    }
+  };
 
   return (
     <header className="glass-header sticky top-0 z-40 border-b border-white/30 bg-white/65 backdrop-blur-xl shadow-[0_8px_26px_rgba(15,23,42,0.1)]">
@@ -42,7 +57,7 @@ function Navbar() {
           {isAuthenticated ? (
             <>
               <p className="text-sm text-slate-600">Hi, {user.name}</p>
-              <Button variant="outline" size="sm" onClick={logout}>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
             </>
@@ -77,10 +92,7 @@ function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  logout();
-                  setIsOpen(false);
-                }}
+                onClick={handleLogout}
               >
                 Logout
               </Button>

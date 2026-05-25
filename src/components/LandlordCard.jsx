@@ -1,8 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FaBuilding, FaRegMessage } from 'react-icons/fa6';
 import RatingStars from './RatingStars';
 
-function LandlordCard({ landlord }) {
+function LandlordCard({ landlord, showProfileLink = true }) {
+  const location = useLocation();
+  const profilePath = `/landlords/${landlord.id}`;
+  const isCurrentProfilePage = location.pathname === profilePath;
+
   return (
     <article className="card p-5">
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">
@@ -24,9 +28,13 @@ function LandlordCard({ landlord }) {
           <FaRegMessage /> {landlord.reviewsCount} tenant reviews
         </p>
       </div>
-      <Link to={`/landlords/${landlord.id}`} className="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline">
-        View profile
-      </Link>
+      {showProfileLink && !isCurrentProfilePage ? (
+        <Link to={profilePath} className="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline">
+          View profile
+        </Link>
+      ) : (
+        <p className="mt-4 text-xs font-medium text-slate-500">You are viewing this public profile.</p>
+      )}
     </article>
   );
 }
