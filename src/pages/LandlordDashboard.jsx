@@ -197,22 +197,41 @@ function LandlordDashboard() {
         <section className="card p-5 lg:col-span-2">
           <h2 className="text-lg font-bold text-slate-900">Property Management</h2>
           <div className="mt-4 space-y-3">
-            {ownedProperties.map((property) => (
-              <article key={property.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-slate-900">{property.title}</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                    {property.availability_status}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">{property.location}</p>
-                <div className="mt-3">
-                  <Link to={`/properties/${property.id}/edit`} className="text-sm font-semibold text-brand-700 hover:underline">
-                    Edit Property
-                  </Link>
-                </div>
-              </article>
-            ))}
+            {loading ? (
+              <>
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <article
+                    key={`property-loading-${index}`}
+                    className="animate-pulse rounded-xl border border-slate-200 p-4"
+                  >
+                    <div className="h-4 w-40 rounded bg-slate-200" />
+                    <div className="mt-2 h-3 w-28 rounded bg-slate-100" />
+                    <div className="mt-3 h-3 w-20 rounded bg-slate-100" />
+                  </article>
+                ))}
+              </>
+            ) : null}
+            {!loading
+              ? ownedProperties.map((property) => (
+                  <article key={property.id} className="rounded-xl border border-slate-200 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold text-slate-900">{property.title}</p>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                        {property.availability_status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">{property.location}</p>
+                    <div className="mt-3">
+                      <Link
+                        to={`/properties/${property.id}/edit`}
+                        className="text-sm font-semibold text-brand-700 hover:underline"
+                      >
+                        Edit Property
+                      </Link>
+                    </div>
+                  </article>
+                ))
+              : null}
             {!loading && ownedProperties.length === 0 ? (
               <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">No properties listed yet.</p>
             ) : null}
@@ -245,6 +264,22 @@ function LandlordDashboard() {
           ) : null}
 
           <div className="mt-4 space-y-3">
+            {loading ? (
+              <>
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <article key={`request-loading-${index}`} className="animate-pulse rounded-xl border border-slate-200 p-3">
+                    <div className="h-4 w-44 rounded bg-slate-200" />
+                    <div className="mt-2 h-3 w-56 rounded bg-slate-100" />
+                    <div className="mt-2 h-3 w-40 rounded bg-slate-100" />
+                    <div className="mt-3 h-9 w-full rounded bg-slate-100" />
+                    <div className="mt-3 flex gap-2">
+                      <div className="h-8 w-28 rounded bg-slate-100" />
+                      <div className="h-8 w-20 rounded bg-slate-100" />
+                    </div>
+                  </article>
+                ))}
+              </>
+            ) : null}
             {pendingRequests.map((request) => (
               <article key={request.id} className="rounded-xl border border-slate-200 p-3">
                 <p className="text-sm font-semibold text-slate-900">
@@ -302,6 +337,21 @@ function LandlordDashboard() {
         <section className="card p-5">
           <h2 className="text-lg font-bold text-slate-900">Recent Reviews</h2>
           <div className="mt-4 space-y-3">
+            {loading ? (
+              <>
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <article key={`review-loading-${index}`} className="animate-pulse rounded-xl border border-slate-200 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="h-4 w-28 rounded bg-slate-200" />
+                      <div className="h-3 w-20 rounded bg-slate-100" />
+                    </div>
+                    <div className="mt-3 h-3 w-52 rounded bg-slate-100" />
+                    <div className="mt-2 h-3 w-full rounded bg-slate-100" />
+                    <div className="mt-2 h-3 w-4/5 rounded bg-slate-100" />
+                  </article>
+                ))}
+              </>
+            ) : null}
             {mappedReviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}

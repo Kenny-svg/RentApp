@@ -12,10 +12,15 @@ export const signUpUser = async ({
   tenantIntent,
   landlordEmail
 }) => {
+  const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim();
+  const runtimeSiteUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const emailRedirectTo = configuredSiteUrl || runtimeSiteUrl || undefined;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo,
       data: {
         full_name: fullName,
         role,
